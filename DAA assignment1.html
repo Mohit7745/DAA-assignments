@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Search Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        .chart-container {
+            margin: 30px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Linear Search Algorithm Analysis</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="arraySize">Array Size (n):</label>
+                <input type="number" id="arraySize" value="10000" min="100" max="100000" step="100">
+            </div>
+            <div class="control-group">
+                <label for="iterations">Iterations for Average:</label>
+                <input type="number" id="iterations" value="100" min="10" max="1000">
+            </div>
+            <button onclick="runAnalysis()">Run Analysis</button>
+        </div>
+        
+        <div id="progress" style="display: none;">
+            <div class="loading">Running analysis...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="code-section">
+            <h3>Linear Search Implementation:</h3>
+            <pre>
+function linearSearch(arr, target) {
+    const startTime = performance.now();
+    
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] === target) {
+            const endTime = performance.now();
+            return {
+                found: true,
+                index: i,
+                time: endTime - startTime,
+                comparisons: i + 1
+            };
+        }
+    }
+    
+    const endTime = performance.now();
+    return {
+        found: false,
+        index: -1,
+        time: endTime - startTime,
+        comparisons: arr.length
+    };
+}
+            </pre>
+        </div>
+        <div id="results" class="results" style="display: none;">
+            <h2>Performance Results</h2>
+            <div id="resultsContent"></div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="performanceChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div class="analysis">
+            <h2> Time Complexity Analysis</h2>
+            
+            <div class="complexity-section">
+                <h3> Best Case - O(1)</h3>
+                <p>The best case occurs when the target element is at the first position (index 0) of the array. In this scenario, the algorithm finds the element immediately after just one comparison, regardless of the array size. This gives us a constant time complexity of O(1).</p>
+                <p>Why O(1)? Because the number of operations doesn't depend on the input size n.</p>
+            </div>
+            <div class="complexity-section">
+                <h3> Average Case - O(n/2) ≈ O(n)</h3>
+                <p>On average, the target element will be found somewhere in the middle of the array. Statistically, we expect to examine about half the elements before finding our target. This gives us O(n/2) operations, which simplifies to O(n) in Big O notation.</p>
+                <p>Why O(n)? Because in the worst statistical case, we still need to check a linear proportion of elements.</p>
+            </div>
+            <div class="complexity-section">
+                <h3>Worst Case - O(n)</h3>
+                <p>The worst case occurs when the target element is either at the last position or not presentin the array. In both scenarios, we must examine every single element before concluding our search.</p>
+                <p>Why O(n)? Because we need to check all n elements in the array.</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        let performanceChart = null;
+        function linearSearch(arr, target) {
+            const startTime = performance.now();
+            
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] === target) {
+                    const endTime = performance.now();
+                    return {
+                        found: true,
+                        index: i,
+                        time: endTime - startTime,
+                        comparisons: i + 1
+                    };
+                }
+            }
+            
+            const endTime = performance.now();
+            return {
+                found: false,
+                index: -1,
+                time: endTime - startTime,
+                comparisons: arr.length
+            };
+        }
+        function generateRandomArray(size) {
+            const arr = [];
+            for (let i = 0; i < size; i++) {
+                arr.push(Math.floor(Math.random() * size * 2));
+            }
+            return arr;
+        }
+        function updateProgress(percentage) {
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = percentage + '%';
+        }
+        async function runAnalysis() {
+            const arraySize = parseInt(document.getElementById('arraySize').value);
+            const iterations = parseInt(document.getElementById('iterations').value);
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            updateProgress(10);
+            const testArray = generateRandomArray(arraySize);
+            updateProgress(20);
+            const bestCaseTarget = testArray[0];
+            const bestCaseResult = linearSearch(testArray, bestCaseTarget);
+            updateProgress(30);
+            let avgTotalTime = 0;
+            let avgTotalComparisons = 0;
+            for (let i = 0; i < iterations; i++) {
+                const randomIndex = Math.floor(Math.random() * arraySize);
+                const avgCaseTarget = testArray[randomIndex];
+                const avgResult = linearSearch(testArray, avgCaseTarget);
+                avgTotalTime += avgResult.time;
+                avgTotalComparisons += avgResult.comparisons;
+                if (i % 10 === 0) {
+                    updateProgress(30 + (i / iterations) * 40);
+                }
+            }
+            const avgCaseTime = avgTotalTime / iterations;
+            const avgCaseComparisons = avgTotalComparisons / iterations;
+            updateProgress(80);
+            const worstCaseTarget = -1; 
+            const worstCaseResult = linearSearch(testArray, worstCaseTarget);
+            updateProgress(100);
+            setTimeout(() => {
+                displayResults({
+                    arraySize,
+                    iterations,
+                    bestCase: bestCaseResult,
+                    avgCase: { time: avgCaseTime, comparisons: avgCaseComparisons },
+                    worstCase: worstCaseResult
+                });
+                createChart([bestCaseResult.time, avgCaseTime, worstCaseResult.time]);
+                
+                document.getElementById('progress').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+            }, 500);
+        }
+        function displayResults(results) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="case-result">
+                    <div class="case-title"> Best Case (Element at first position)</div>
+                    <div>Time: <span class="time-display">${results.bestCase.time.toFixed(6)} ms</span></div>
+                    <div>Comparisons: <span class="highlight">${results.bestCase.comparisons}</span></div>
+                    <div>Index found: ${results.bestCase.index}</div>
+                </div>
+                
+                <div class="case-result">
+                    <div class="case-title"> Average Case (${results.iterations} iterations)</div>
+                    <div>Average Time: <span class="time-display">${results.avgCase.time.toFixed(6)} ms</span></div>
+                    <div>Average Comparisons: <span class="highlight">${results.avgCase.comparisons.toFixed(1)}</span></div>
+                    <div>Expected: ~${(results.arraySize / 2).toFixed(0)} comparisons</div>
+                </div>
+                
+                <div class="case-result">
+                    <div class="case-title"> Worst Case (Element not present)</div>
+                    <div>Time: <span class="time-display">${results.worstCase.time.toFixed(6)} ms</span></div>
+                    <div>Comparisons: <span class="highlight">${results.worstCase.comparisons}</span></div>
+                    <div>Searched entire array of ${results.arraySize} elements</div>
+                </div>
+                
+                <div class="case-result">
+                    <div class="case-title"> Performance Ratio Analysis</div>
+                    <div>Worst/Best ratio: <span class="highlight">${(results.worstCase.time / results.bestCase.time).toFixed(2)}x</span></div>
+                    <div>Avg/Best ratio: <span class="highlight">${(results.avgCase.time / results.bestCase.time).toFixed(2)}x</span></div>
+                    <div>This demonstrates the linear growth of search time with problem size.</div>
+                </div>
+            `;
+        }
+        function createChart(times) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Best Case O(1)', 'Average Case O(n/2)', 'Worst Case O(n)'],
+                    datasets: [{
+                        label: 'Execution Time (ms)',
+                        data: times,
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(241, 196, 15, 0.8)',
+                            'rgba(231, 76, 60, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(231, 76, 60, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Time (milliseconds)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+    </script>
+</body>
+</html>
